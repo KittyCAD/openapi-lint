@@ -146,10 +146,13 @@ impl Validator {
     fn validate_object(&self, schema: &Schema) -> Vec<String> {
         let mut ret = Vec::new();
 
+        // Exclude the webrtc shit.
+        let excluded = vec!["usernameFragment", "sdpMid", "sdpMLineIndex"];
+
         if let openapiv3::SchemaKind::Type(Type::Object(obj)) = &schema.schema_kind {
             for prop_name in obj.properties.keys() {
                 let snake = prop_name.to_snake_case();
-                if prop_name.clone() != snake {
+                if prop_name.clone() != snake && !excluded.contains(&prop_name.as_str()) {
                     ret.push(format!(
                         "An object contains a property '{}' which is not \
                         snake_case:\n{:#?}\n\
@@ -203,7 +206,12 @@ impl Validator {
                 if let Some(label) = enum_value {
                     let lower = label.to_snake_case();
                     let upper = label.to_shouty_snake_case();
-                    if label != &lower && label != &upper {
+                    let colons = lower.replace("_", ":");
+                    if label != &lower
+                        && label != &upper
+                        && label != &colons
+                        && label != "urn:ietf:params:oauth:grant-type:device_code"
+                    {
                         ret.push(format!(
                             "An enumerated string contains a value '{}' that \
                             is neither snake_case nor \
@@ -224,6 +232,13 @@ impl Validator {
     fn validate_path(&self, path: &str) -> Option<String> {
         const INFO: &str = "For more info, see \
             https://github.com/oxidecomputer/openapi-lint#paths";
+
+        if path == "/_meta/info"
+            || path == "/.well-known/ai-plugin.json"
+            || path == "/openai/openapi.json"
+        {
+            return None;
+        }
 
         path.split('/')
             .any(|component| {
