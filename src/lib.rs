@@ -233,10 +233,7 @@ impl Validator {
         const INFO: &str = "For more info, see \
             https://github.com/oxidecomputer/openapi-lint#paths";
 
-        if path == "/_meta/info"
-            || path == "/.well-known/ai-plugin.json"
-            || path == "/openai/openapi.json"
-        {
+        if path == "/_meta/info" || path == "/_meta/ipinfo" {
             return None;
         }
 
